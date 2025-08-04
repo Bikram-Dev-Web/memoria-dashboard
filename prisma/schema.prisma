@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  catalogs Catalog[]
+  chatQueries ChatQuery[]
+
+  @@map("clients")
+}
+
+model Catalog {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  clientId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  client   Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  categories Category[]
+  products Product[]
+
+  @@map("catalogs")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  catalogId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  catalog Catalog   @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal?
+  imageUrl    String?
+  categoryId  String
+  catalogId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  catalog      Catalog       @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  productContext ProductContext?
+  chatQueries ChatQuery[]
+
+  @@map("products")
+}
+
+model ProductContext {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  productId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_contexts")
+}
+
+model ChatQuery {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  answer    String?  @db.Text
+  productId String?
+  clientId  String
+  createdAt DateTime @default(now())
+
+  // Relations
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("chat_queries")
+}
