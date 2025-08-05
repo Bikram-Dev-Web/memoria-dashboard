@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Save, ArrowLeft } from "lucide-react";
+import { Upload, FileText, Save, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface Product {
@@ -26,29 +26,39 @@ export default function ProductContextPage({
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchProduct();
-  }, []);
-
-  const fetchProduct = async () => {
-    try {
-      const response = await fetch(`/api/products/${params.productId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProduct(data);
-        setContent(data.productContext?.content || "");
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/products/${params.productId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data);
+          setContent(data.productContext?.content || "");
+        } else {
+          toast({
+            title: "Error",
+            description: "Product could not be found.",
+            variant: "destructive",
+          });
+          router.push("/dashboard/products");
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load product details.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load product details.",
-        variant: "destructive",
-      });
-    }
-  };
+    };
+
+    fetchProduct();
+  }, [params.productId, router, toast]);
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -107,28 +117,14 @@ export default function ProductContextPage({
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading product details...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   if (!product) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="text-center py-8">
-          <p className="text-gray-600">Product not found.</p>
-          <Link href="/dashboard/products">
-            <Button variant="outline" className="mt-4">
-              Back to Products
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
+    return <div className="text-center py-8">Product could not be loaded.</div>;
   }
 
   return (
@@ -157,7 +153,6 @@ export default function ProductContextPage({
             <h2 className="text-lg font-medium text-gray-900 mb-4">
               Product Context
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -177,14 +172,18 @@ export default function ProductContextPage({
                   disabled={isSaving}
                   className="flex items-center"
                 >
-                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
                   {isSaving ? "Saving..." : "Save Context"}
                 </Button>
 
                 <div className="relative">
                   <input
                     type="file"
-                    accept=".txt,.pdf,.doc,.docx"
+                    accept=".txt"
                     onChange={handleFileUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
@@ -201,35 +200,24 @@ export default function ProductContextPage({
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Tips</h3>
-
             <div className="space-y-3 text-sm text-gray-600">
               <div className="flex items-start space-x-2">
-                <FileText className="h-4 w-4 text-indigo-600 mt-0.5" />
+                <FileText className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
                 <p>
                   Include detailed product specifications, features, and
                   benefits.
                 </p>
               </div>
-
               <div className="flex items-start space-x-2">
-                <FileText className="h-4 w-4 text-indigo-600 mt-0.5" />
+                <FileText className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
                 <p>
                   Add usage instructions, care guidelines, and troubleshooting
                   tips.
                 </p>
               </div>
-
               <div className="flex items-start space-x-2">
-                <FileText className="h-4 w-4 text-indigo-600 mt-0.5" />
+                <FileText className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
                 <p>Include common customer questions and their answers.</p>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <FileText className="h-4 w-4 text-indigo-600 mt-0.5" />
-                <p>
-                  Mention warranty information, return policies, and shipping
-                  details.
-                </p>
               </div>
             </div>
           </div>
@@ -238,7 +226,6 @@ export default function ProductContextPage({
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Product Info
             </h3>
-
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
