@@ -1,13 +1,14 @@
-import { PrismaClient } from "@prisma/client";
+// @/lib/db.ts
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+import { PrismaClient } from '@prisma/client';
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["query"],
-  });
+// This prevents multiple instances of Prisma Client in development
+declare global {
+  var prisma: PrismaClient | undefined;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+export const db = globalThis.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.prisma = db;
+}

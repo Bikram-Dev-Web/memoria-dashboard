@@ -11,7 +11,7 @@ export default async function CatalogsPage() {
   if (!userId) {
     redirect("/sign-in");
   }
-
+ 
   const client = await db.client.findUnique({
     where: { clerkId: userId },
     include: {
